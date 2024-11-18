@@ -499,20 +499,125 @@ def open_task3():
     # Declare as global to use in other functions
     global levels_bits_entry, quantization_choice
     quantization_choice = IntVar(task3_window)  # Associate IntVar with task3_window
-
-    # Input type selection for quantization (levels or bits)
     Label(task3_window, text="Choose quantization input type:").pack()
     Radiobutton(task3_window, text="Number of Levels", variable=quantization_choice, value=1).pack()
     Radiobutton(task3_window, text="Number of Bits", variable=quantization_choice, value=2).pack()
-
-    # Entry field for levels or bits
     Label(task3_window, text="Enter levels or bits:").pack()
     levels_bits_entry = Entry(task3_window, width=20)
     levels_bits_entry.pack()
-
-    # Button to start quantization process
     quantize_button = Button(task3_window, text="Quantize Signal", command=perform_quantization)
     quantize_button.pack()
+def fourier_transform(freq):
+    file = filedialog.askopenfilename(filetypes=[('Text Files', '*.txt')])
+    freq = int (freq)
+    if fourier_choice.get() == 1:
+        signal = read_signal_from_file(file)
+        N = len(signal)
+        X = np.zeros(N, complex)
+        for k in range(N):
+            for n in range(N):
+                X[k] += signal[n] * np.exp(-2j * np.pi * k * n / N)
+        amp = np.sqrt((X.real * X.real) + (X.imag * X.imag))
+        phase_shift = np.atan2(X.imag, X.real)
+        with open("Output_Signal_DFT_A,Phase.txt", 'r') as f:
+            lines = f.readlines()
+            signal_data = [[float(x.rstrip('f')) for x in line.split()] for line in lines[3:]]
+        output_amp = np.array([row[0] for row in signal_data])
+        output_phase=np.array([row[1] for row in signal_data])
+        if SignalComapreAmplitude(amp,output_amp)&SignalComaprePhaseShift(phase_shift,output_phase):
+            print("Test Cases passed Successfully")
+        else:
+            print("Test Cases failed")
+        fundamental_freq = 2 * np.pi * freq / N
+        frequencies = [fundamental_freq * i for i in range(1, N + 1)]
+        plt.figure(figsize=(10, 6))
+        plt.subplot(2, 1, 1)
+        plt.stem(frequencies, amp)
+        plt.xlabel('Frequency')
+        plt.ylabel('Amplitude')
+        plt.title('DFT')
+        plt.grid(True)
+        plt.subplot(2, 1, 2)
+        plt.stem(frequencies, phase_shift)
+        plt.xlabel('Frequency')
+        plt.ylabel('Phase Shift')
+        plt.grid(True)
+        plt.show()
+    else:
+        with open(file, 'r') as f:
+            lines = f.readlines()
+            signal_data = [[float(x.rstrip('f')) for x in line.split()] for line in lines[3:]]
+        amp = np.array([row[0] for row in signal_data])
+        phase=np.array([row[1] for row in signal_data])
+        N = len(amp)
+        X = np.zeros(N, complex)
+        freq =np.zeros(N, complex)
+        real =amp*np.cos(phase)
+        img = amp*np.sin(phase)
+        X += real + 1j * img
+        for k in range(N):
+            for n in range(N):
+                freq[k] += X[n] * np.exp(2j * np.pi * k * n / N)
+            freq[k]/=N
+        output_freq = read_signal_from_file("Output_Signal_IDFT.txt")
+        if SignalComapreAmplitude(freq,output_freq):
+            print("Test Cases passed Successfully")
+        else:
+            print("Test Cases failed")
+        indices = list(range(N))
+        frq = [int(x) for x in np.real(freq)]
+        plt.stem(indices,frq)
+        plt.xlabel('Index')
+        plt.ylabel('Frequency')
+        plt.title('IDFT')
+        plt.grid(True)
+        plt.show()
+
+
+def SignalComapreAmplitude(SignalInput = [] ,SignalOutput= []):
+    if len(SignalInput) != len(SignalInput):
+        return False
+    else:
+        for i in range(len(SignalInput)):
+            if abs(SignalInput[i]-SignalOutput[i])>0.001:
+                return False
+        return True
+
+def SignalComaprePhaseShift(SignalInput = [] ,SignalOutput= []):
+    if len(SignalInput) != len(SignalInput):
+        return False
+    else:
+        for i in range(len(SignalInput)):
+            A=round(SignalInput[i])
+            B=round(SignalOutput[i])
+            if abs(A-B)>0.0001:
+                return False
+        return True
+
+
+def open_task4():
+    # Create new window for task 3
+    task4window = Toplevel(root)
+    task4window.geometry("500x300")
+    task4window.title(" Fourier Transform")
+
+    # Declare as global to use in other functions
+    global sampling_freq, fourier_choice
+    fourier_choice = IntVar(task4window)  # Associate IntVar with task4window
+
+    # Input type selection for quantization (levels or bits)
+    Label(task4window, text="Choose Fourier Transform  type:").pack()
+    Radiobutton(task4window, text="DFT", variable=fourier_choice, value=1).pack()
+    Radiobutton(task4window, text="IDFT", variable=fourier_choice, value=2).pack()
+
+
+    Label(task4window, text="Enter Sampling Frequency:").pack()
+    sampling_freq = Entry(task4window, width=20)
+    sampling_freq.pack()
+
+    # Button to start quantization process
+    FT_button = Button(task4window, text="Calculate Signal", command=lambda :fourier_transform(sampling_freq.get()))
+    FT_button.pack()
 # gui
 root = tk.Tk()
 root.title("Signal Generator")
@@ -548,4 +653,6 @@ task2_button = Button(text="Arithmetic Operations",command=open_task2)
 task2_button.pack()
 task3_button = Button(root, text="Calculate Quantization", command=open_task3)
 task3_button.pack()
+task4_button = Button(root, text="Fourier Transform", command=open_task4)
+task4_button.pack()
 root.mainloop()
