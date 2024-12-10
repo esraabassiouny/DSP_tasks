@@ -7,6 +7,7 @@ import task4 as task4
 import task5 as task5
 import task2 as task2
 import task6 as task6
+import task7 as task7
 
 def parse_input():
     amp = float(ampValue.get())
@@ -15,7 +16,6 @@ def parse_input():
     sampling_freq = float(samplingFreqValue.get())
     type = str(funct.get())
     return amp,theta ,freq,sampling_freq, type
-
 
 # gui
 root = tk.Tk()
@@ -58,4 +58,8 @@ task5_button = Button(text="Time Domain",command=lambda :task5.open_task5(root))
 task5_button.pack()
 task6_button = Button(text="task 6",command=lambda : task6.open_task6(root))
 task6_button.pack()
+task71_button = Button(text="Filtering",command=lambda :task7.open_filtering_popup(root))
+task71_button.pack()
+task72_button = Button(text="Resampling",command=lambda : task7.open_resampling_popup(root))
+task72_button.pack()
 root.mainloop()

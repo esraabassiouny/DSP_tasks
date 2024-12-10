@@ -49,18 +49,19 @@ def smooth_signal():
         compare_signal("OutMovAvgTest2.txt",smoothed_signal,smoothed_indices)
 
 
-
-
-
 def compute_moving_average(signal, window_size):
-    """Computes the moving average of the signal."""
-    if len(signal) < window_size:
-        raise ValueError("Window size must be less than or equal to the length of the signal.")
-    return np.convolve(signal, np.ones(window_size) / window_size, mode='valid')
+    if window_size < 2 or len(signal) <= window_size:
+        raise ValueError("Window size must be greater than 1 and signal length must be greater than window size")
+    smoothed_signal = []
+    half_window = window_size // 2
+    for n in range(half_window, len(signal) - half_window):
+        avg = sum(signal[n - half_window:n + half_window + 1]) / window_size
+        smoothed_signal.append(avg)
+
+    return smoothed_signal
 
 
 def compare_signal(file_path,smoothed_signal,smoothed_indices):
-
     if smoothed_signal is None or smoothed_indices is None:
         messagebox.showerror("Error", "No smoothed signal available. Please smooth a signal first.")
         return
@@ -114,8 +115,6 @@ def remove_dc_time():
     except Exception as e:
         messagebox.showerror("Error", f"Could not read the signals from the files: {e}")
         return
-
-
     mean_value = sum(signal) / len(signal)
 
     dc_removed_signal = [value - mean_value for value in signal]
@@ -198,10 +197,8 @@ def convolve_signals():
         messagebox.showerror("Error", f"Could not read the signals from the files: {e}")
         return
 
-    # Perform convolution manually
     convolved_samples = []
 
-    # Ensure indices are integers for the range
     start_index = int(indices1[0] + indices2[0])
     end_index = int(indices1[-1] + indices2[-1])
 
@@ -215,10 +212,8 @@ def convolve_signals():
                 conv_sum += samples1[n] * samples2[j]
         convolved_samples.append(conv_sum)
 
-    # Plot the convolved signal
     plot_signal(convolved_indices, convolved_samples, title="Convolved Signal")
 
-    # Validate with ConvTest if available
     if "ConvTest" in globals():
         ConvTest(convolved_indices, convolved_samples)
     else:
@@ -247,7 +242,6 @@ def ConvTest(Your_indices, Your_samples):
 
 
 signals = []
-# Global variables to store computed correlation results
 last_correlation_indices = None
 last_correlation_values = None
 
@@ -255,39 +249,35 @@ last_correlation_values = None
 def normalized_cross_correlation(signal1, signal2):
     X1 = np.array(signal1)
     X2 = np.array(signal2)
-
-    N = len(X1)  # Signal length
-    # Pre-compute squared sums for normalization
+    N = len(X1)
     X1_squared_sum = np.sum(X1 ** 2)
     X2_squared_sum = np.sum(X2 ** 2)
     normalization = np.sqrt(X1_squared_sum * X2_squared_sum)
-    # Compute the cross-correlation numerator
     r12 = []
     for j in range(N):
-        numerator = sum(X1[i] * X2[(i + j) % N] for i in range(N))  # Periodic signals
+        numerator = sum(X1[i] * X2[(i + j) % N] for i in range(N))
         r12.append(numerator / normalization)
 
     return np.array(r12)
 
 def read_signal_with_indices_from_txt(file_path):
-    """Read the signal and indices from a text file."""
     indices = []
     samples = []
     try:
         with open(file_path, 'r') as file:
             for line in file.readlines():
-                line = line.strip()  # Remove any extra whitespace or newline characters
-                if line:  # Skip empty lines
+                line = line.strip()
+                if line:
                     parts = line.split()
-                    if len(parts) == 2:  # Ensure there are exactly two parts (index and signal value)
+                    if len(parts) == 2:
                         indices.append(int(parts[0]))
                         samples.append(float(parts[1]))
-                    else:
-                        print(f"Skipping invalid line: {line}")  # Debugging invalid lines
+                    # else:
+                    #     print(f"Skipping invalid line: {line}")
     except Exception as e:
         raise ValueError(f"Error reading file {file_path}: {str(e)}")
 
-    print(f"Read {len(indices)} indices and {len(samples)} samples from {file_path}")  # Debugging output
+    #print(f"Read {len(indices)} indices and {len(samples)} samples from {file_path}")  # Debugging output
     return indices, samples
 
 def on_normalized_cross_correlation_click():
@@ -298,7 +288,6 @@ def on_normalized_cross_correlation_click():
         messagebox.showerror("Input Error", "Please select both signal files.")
         return
 
-    # Read the signals from the files
     try:
         indices1, samples1 = read_signal_with_indices_from_txt(file1_path)
         indices2, samples2 = read_signal_with_indices_from_txt(file2_path)
@@ -308,24 +297,6 @@ def on_normalized_cross_correlation_click():
     output_signal = normalized_cross_correlation(samples1,samples2)
     print(output_signal)
     Compare_Signals("CorrOutput.txt",indices1,output_signal)
-
-
-def compare_cross_correlation():
-    """Compares the last computed correlation with an expected correlation file."""
-    global last_correlation_indices, last_correlation_values
-
-    if last_correlation_indices is None or last_correlation_values is None:
-        messagebox.showerror("Error", "No correlation computed to compare.")
-        return
-
-    # Ask the user to select an expected correlation file for comparison
-    file_path = filedialog.askopenfilename(filetypes=[("Expected Correlation File", "*.txt")])
-    if not file_path:
-        messagebox.showerror("Error", "No file selected.")
-        return
-
-    # Compare the computed correlation with values from the selected file
-    Compare_Signals(file_path, last_correlation_indices, last_correlation_values)
 
 
 def Compare_Signals(file_name, Your_indices, Your_samples):
